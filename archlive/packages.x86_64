@@ -29,6 +29,7 @@ exfatprogs
 f2fs-tools
 fatresize
 fsarchiver
+git
 gnu-netcat
 gpart
 gpm
@@ -106,7 +107,7 @@ udftools
 usb_modeswitch
 usbmuxd
 usbutils
-vim
+neovim
 virtualbox-guest-utils-nox
 vpnc
 wireless-regdb
