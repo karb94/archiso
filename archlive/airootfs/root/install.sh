@@ -147,7 +147,9 @@ EOF
   printf "\n\nSet "$USERNAME" password\n"
   arch-chroot /mnt /bin/sh -c 'passwd $USERNAME; while [ $? -ne 0 ]; do passwd; done'
 
-  arch-chroot /mnt pacman -Sy --noconfirm
+  packages_url=https://raw.githubusercontent.com/karb94/arch/master/packages
+  arch-chroot /mnt /bin/sh -c \
+    "curl $packages_url | pacman -Syu --noconfirm -"
   # first_boot_url=https://raw.githubusercontent.com/karb94/arch/master/first_boot.sh
   # curl "$first_boot_url" > /mnt/etc/NetworkManager/dispatcher.d/10-first_boot.sh
   # arch-chroot /mnt chmod +x /etc/NetworkManager/dispatcher.d/10-first_boot.sh
