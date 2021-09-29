@@ -145,15 +145,12 @@ EOF
   arch-chroot /mnt /bin/sh -c 'passwd; while [ $? -ne 0 ]; do passwd; done'
   arch-chroot /mnt useradd --create-home --groups wheel --shell /bin/bash $USERNAME
   printf "\n\nSet "$USERNAME" password\n"
-  arch-chroot /mnt /bin/sh -c 'passwd $USERNAME; while [ $? -ne 0 ]; do passwd; done'
+  arch-chroot /mnt /bin/sh -c "passwd $USERNAME; while [ \$? -ne 0 ]; do passwd $USERNAME; done"
 
   mv /root/packages /mnt/root/
   arch-chroot /mnt pacman -Syu --needed --noconfirm /root/packages
+  arch-chroot /mnt pacman -S --needed --noconfirm /root/packages
   rm /mnt/root/packages
-  # first_boot_url=https://raw.githubusercontent.com/karb94/arch/master/first_boot.sh
-  # curl "$first_boot_url" > /mnt/etc/NetworkManager/dispatcher.d/10-first_boot.sh
-  # arch-chroot /mnt chmod +x /etc/NetworkManager/dispatcher.d/10-first_boot.sh
-
 }
 
 start=$(date +%s)
