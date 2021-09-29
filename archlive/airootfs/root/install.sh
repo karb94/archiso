@@ -149,7 +149,7 @@ EOF
 
   mv /root/packages /mnt/root/
   arch-chroot /mnt pacman -Syu --needed --noconfirm /root/packages
-  arch-chroot /mnt pacman -S --needed --noconfirm /root/packages
+  arch-chroot /mnt pacman -S --needed --noconfirm - </root/packages
   rm /mnt/root/packages
 }
 
