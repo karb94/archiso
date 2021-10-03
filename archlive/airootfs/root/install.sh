@@ -148,8 +148,8 @@ EOF
   arch-chroot /mnt /bin/sh -c "passwd $USERNAME; while [ \$? -ne 0 ]; do passwd $USERNAME; done"
 
   mv /root/packages /mnt/root/
-  arch-chroot /mnt pacman -Syu --needed --noconfirm /root/packages
-  arch-chroot /mnt pacman -S --needed --noconfirm - </root/packages
+  arch-chroot /mnt pacman -Syu --needed --noconfirm
+  arch-chroot /mnt /bin/sh -c 'pacman -S --needed --noconfirm - </root/packages'
   rm /mnt/root/packages
 }
 
