@@ -1,9 +1,5 @@
-base-devel
 bash-completion
 bspwm
-curl
-git
-jq
 make
 man-db
 man-pages
@@ -11,5 +7,4 @@ neovim
 opendoas
 pacman-contrib
 pipewire
-which
 xorg-server
