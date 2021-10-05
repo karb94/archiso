@@ -98,7 +98,7 @@ EOF
   curl -s $mirrors_url | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist
 
   # create minimal system in /mnt by bootstrapping
-  pacstrap /mnt base linux-zen linux-firmware grub networkmanager system_config
+  pacstrap /mnt base linux-zen linux-firmware grub networkmanager base-config
 
   # create fstab
   genfstab -L /mnt >> /mnt/etc/fstab
@@ -124,7 +124,6 @@ EOF
 
   # enable systemd-networkd as network manager
   arch-chroot /mnt systemctl enable NetworkManager.service
-  arch-chroot /mnt systemctl enable NetworkManager-dispatcher.service
 
   # GRUB configuration
   if [ "$BIOS_TYPE" == "uefi" ]
@@ -140,17 +139,18 @@ EOF
   # generate GRUB config
   arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
+  mv /root/packages /mnt/root/
+  arch-chroot /mnt pacman -Syu --needed --noconfirm
+  arch-chroot /mnt /bin/sh -c 'pacman -S --needed --noconfirm - </root/packages'
+  rm /mnt/root/packages
+
+
   # set root password
   printf "\n\nSet root password\n"
   arch-chroot /mnt /bin/sh -c 'passwd; while [ $? -ne 0 ]; do passwd; done'
   arch-chroot /mnt useradd --create-home --groups wheel --shell /bin/bash $USERNAME
   printf "\n\nSet "$USERNAME" password\n"
   arch-chroot /mnt /bin/sh -c "passwd $USERNAME; while [ \$? -ne 0 ]; do passwd $USERNAME; done"
-
-  mv /root/packages /mnt/root/
-  arch-chroot /mnt pacman -Syu --needed --noconfirm
-  arch-chroot /mnt /bin/sh -c 'pacman -S --needed --noconfirm - </root/packages'
-  rm /mnt/root/packages
 }
 
 start=$(date +%s)
