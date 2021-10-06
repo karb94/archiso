@@ -98,32 +98,10 @@ EOF
   curl -s $mirrors_url | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist
 
   # create minimal system in /mnt by bootstrapping
-  pacstrap /mnt base linux-zen linux-firmware grub networkmanager base-config
+  pacstrap /mnt base linux-zen linux-firmware grub base-conf
 
   # create fstab
   genfstab -L /mnt >> /mnt/etc/fstab
-
-  # set time zone
-  arch-chroot /mnt ln -sf /usr/share/zoneinfo/GB /etc/localtime
-  arch-chroot /mnt hwclock --systohc
-
-  # set locale
-  arch-chroot /mnt sed -i '/en_GB.UTF-8/s/#//' /etc/locale.gen
-  arch-chroot /mnt sed -i '/en_US.UTF-8/s/#//' /etc/locale.gen
-  arch-chroot /mnt sed -i '/es_ES.UTF-8/s/#//' /etc/locale.gen
-  arch-chroot /mnt sed -i '/ca_ES.UTF-8/s/#//' /etc/locale.gen
-  arch-chroot /mnt locale-gen
-  arch-chroot /mnt localectl set-locale LANG=en_GB.UTF-8
-
-  # network configuration
-  arch-chroot /mnt cat <<EOF > /etc/hosts
-127.0.0.1   localhost
-::1         localhost
-127.0.1.1   "$HOSTNAME".localdomain "$HOSTNAME"
-EOF
-
-  # enable systemd-networkd as network manager
-  arch-chroot /mnt systemctl enable NetworkManager.service
 
   # GRUB configuration
   if [ "$BIOS_TYPE" == "uefi" ]
@@ -138,12 +116,6 @@ EOF
   fi
   # generate GRUB config
   arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
-
-  mv /root/packages /mnt/root/
-  arch-chroot /mnt pacman -Syu --needed --noconfirm
-  arch-chroot /mnt /bin/sh -c 'pacman -S --needed --noconfirm - </root/packages'
-  rm /mnt/root/packages
-
 
   # set root password
   printf "\n\nSet root password\n"
