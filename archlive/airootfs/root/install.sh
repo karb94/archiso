@@ -97,25 +97,15 @@ EOF
   mirrors_url="https://archlinux.org/mirrorlist/?country=GB&protocol=https&use_mirror_status=on"
   curl -s $mirrors_url | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist
 
-  # create minimal system in /mnt by bootstrapping
-  pacstrap /mnt base linux-zen linux-firmware grub base-conf
-
   # create fstab
   genfstab -L /mnt >> /mnt/etc/fstab
 
-  # GRUB configuration
-  if [ "$BIOS_TYPE" == "uefi" ]
-  then
-    arch-chroot /mnt grub-install \
-      --target=x86_64-efi \
-      --efi-directory=/efi \
-      --boot-directory=/efi \
-      --bootloader-id=GRUB
-  else
-    arch-chroot /mnt grub-install --target=i386-pc /dev/"${device}"
-  fi
-  # generate GRUB config
-  arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+  # create minimal system in /mnt by bootstrapping
+  pacstrap /mnt base linux-zen linux-firmware base-conf
+
+  arch-chroot /mnt pacman -Syyu --noconfirm
+  arch-chroot /mnt pacman -Syu --noconfirm
+
 
   # set root password
   printf "\n\nSet root password\n"
