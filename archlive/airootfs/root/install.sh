@@ -57,7 +57,7 @@ name=swap, size="$SWAP_SIZE", type="$SWAP_UUID"
 name=efi, size="$EFI_SIZE", type="$EFI_UUID"
 name=home, type="$HOME_UUID"
 EOF
-    EFI_DEVICE=$(blkid --list-one --output device --match-token PARTLABEL="home")
+    EFI_DEVICE=$(blkid --list-one --output device --match-token PARTLABEL="efi")
     mkfs.fat -n "efi" -F32 "$EFI_DEVICE"
   else
     # With gpt boot partition must not have a file system
@@ -90,8 +90,10 @@ EOF
 
   # if UEFI BIOS mount the efi partition
   [ "$BIOS_TYPE" == "uefi" ] &&
-    mkdir /mnt/efi && # make dir to mount efi on
-    mount "$EFI_DEVICE" /mnt/efi # Mounting efi file system
+    # mkdir /mnt/efi && # make dir to mount efi on
+    # mount "$EFI_DEVICE" /mnt/efi # Mounting efi file system
+    mkdir /mnt/boot && # make dir to mount efi on
+    mount "$EFI_DEVICE" /mnt/boot # Mounting efi file system
 
   # select only united kingdom mirrors
   mirrors_url="https://archlinux.org/mirrorlist/?country=GB&protocol=https&use_mirror_status=on"
@@ -101,24 +103,10 @@ EOF
   # create minimal system in /mnt by bootstrapping
   pacstrap /mnt base base-conf
 
-  arch-chroot /mnt pacman -Syu --noconfirm grub-conf
-
-  # create fstab
-  # genfstab -L /mnt >> /mnt/etc/fstab
-
- # GRUB configuration
-  # if [ "$BIOS_TYPE" == "uefi" ]
-  # then
-  #   arch-chroot /mnt grub-install \
-  #     --target=x86_64-efi \
-  #     --efi-directory=/efi \
-  #     --boot-directory=/efi \
-  #     --bootloader-id=GRUB
-  # else
-  #   arch-chroot /mnt grub-install --target=i386-pc /dev/"${device}"
-  # fi
-  # # generate GRUB config
-  # arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+  # Install boot loader
+  # This step cannot be completed during pacstrap as the image of the os at
+  # /boot/ is generated as a hook at the end of pacstrap
+  arch-chroot /mnt pacman -Syu --noconfirm grub-uefi-conf
 
   # set root password
   printf "\n\nSet root password\n"
