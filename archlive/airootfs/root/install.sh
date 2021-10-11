@@ -103,9 +103,8 @@ EOF
   # create minimal system in /mnt by bootstrapping
   pacstrap /mnt base base-conf
 
-  # Install boot loader
-  # This step cannot be completed during pacstrap as the image of the os at
-  # /boot/ is generated as a hook at the end of pacstrap
+  # Install boot loader for convenience (dual booting)
+  # The kernel images are generated in /boot/ as a hook at the end of pacstrap
   arch-chroot /mnt pacman -Syu --noconfirm systemd-boot-conf
 
   # set root password
