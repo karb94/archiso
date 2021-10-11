@@ -106,7 +106,7 @@ EOF
   # Install boot loader
   # This step cannot be completed during pacstrap as the image of the os at
   # /boot/ is generated as a hook at the end of pacstrap
-  arch-chroot /mnt pacman -Syu --noconfirm grub-uefi-conf
+  arch-chroot /mnt pacman -Syu --noconfirm systemd-boot-conf
 
   # set root password
   printf "\n\nSet root password\n"
