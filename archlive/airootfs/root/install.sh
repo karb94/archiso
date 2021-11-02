@@ -13,7 +13,6 @@ EFI_SIZE=300MiB
 # for non-UEFI BIOS
 BOOT_SIZE=300MiB
 
-HOSTNAME=Arch_VV
 USERNAME=carles
 
 # exit when any command fails
@@ -99,20 +98,48 @@ EOF
   mirrors_url="https://archlinux.org/mirrorlist/?country=GB&protocol=https&use_mirror_status=on"
   curl -s $mirrors_url | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist
 
-
-  # create minimal system in /mnt by bootstrapping
-  pacstrap /mnt base base-conf
+  # Create minimal system in /mnt by bootstrapping
+  pacstrap /mnt base base-devel base-conf
 
   # Install boot loader for convenience (dual booting)
   # The kernel images are generated in /boot/ as a hook at the end of pacstrap
   arch-chroot /mnt pacman -Syu --noconfirm systemd-boot-conf
 
-  # set root password
+  # Set root password
   printf "\n\nSet root password\n"
   arch-chroot /mnt /bin/sh -c 'passwd; while [ $? -ne 0 ]; do passwd; done'
+
+  # Create a regular user and add it to the wheel group
   arch-chroot /mnt useradd --create-home --groups wheel --shell /bin/bash $USERNAME
   printf "\n\nSet "$USERNAME" password\n"
   arch-chroot /mnt /bin/sh -c "passwd $USERNAME; while [ \$? -ne 0 ]; do passwd $USERNAME; done"
+
+  # Set up git bare repository of dotfiles
+  # dotfiles_repo="https://github.com/karb94/dotfiles.git"
+  # arch-chroot -u "$USERNAME" /mnt \
+  #   git clone \
+  #     --bare "$dotfiles_repo" \
+  #     "/home/$USERNAME/.dotfiles"
+  # arch-chroot -u "$USERNAME" /mnt \
+  #   git \
+  #     --git-dir="/home/$USERNAME/.dotfiles/" \
+  #     --work-tree="/home/$USERNAME/" checkout
+
+  # Set up git bare repository of dotfiles
+  user_config_repo="https://github.com/karb94/stow_dotfiles.git"
+  stow_dir="/home/$USERNAME/.config/stow"
+  arch-chroot -u "$USERNAME" /mnt \
+    mkdir -vp "$stow_dir"
+  arch-chroot -u "$USERNAME" /mnt \
+    git clone "$user_config_repo" "$stow_dir"
+  arch-chroot -u "$USERNAME" /mnt \
+    stow \
+      --dir="$stow_dir" \
+      --target="/home/$USERNAME" \
+      --verbose
+      --no-folding
+      --dotfiles
+      "$(cd /mnt$stow_dir; echo *)"
 }
 
 start=$(date +%s)
