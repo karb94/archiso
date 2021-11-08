@@ -105,6 +105,9 @@ EOF
   # The kernel images are generated in /boot/ as a hook at the end of pacstrap
   arch-chroot /mnt pacman -Syu --noconfirm systemd-boot-conf
 
+  # Install video drivers
+  arch-chroot /mnt pacman -Syu --noconfirm xf86-video-vesa
+
   # Set root password
   printf "\n\nSet root password\n"
   arch-chroot /mnt /bin/sh -c 'passwd; while [ $? -ne 0 ]; do passwd; done'
@@ -136,10 +139,9 @@ EOF
     stow \
       --dir="$stow_dir" \
       --target="/home/$USERNAME" \
-      --verbose
-      --no-folding
-      --dotfiles
-      "$(cd /mnt$stow_dir; echo *)"
+      --verbose \
+      --no-folding \
+      desktop
 }
 
 start=$(date +%s)
