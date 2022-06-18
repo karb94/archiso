@@ -43,6 +43,9 @@ log="install.log"
 
 arch_install () {
 
+  # exit when any command fails
+  set -e
+
   # update the system clock
   timedatectl set-ntp true
 
@@ -99,14 +102,26 @@ EOF
   curl -s $mirrors_url | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist
 
   # Create minimal system in /mnt by bootstrapping
-  pacstrap /mnt base base-devel base-conf
+  pacstrap /mnt base base-devel system_config-conf aur-conf
 
+  # Update mirror list of the new system
+  cp -fp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
+  
+  # Copy local aur repo to the new system with access to any user in the wheel group
+  install -vd -m0775 --group=wheel /mnt/var/cache/pacman/aur
+  install -vm0664 --group=wheel /root/aur/* /mnt/var/cache/pacman/aur
+
+  # Update system
+  arch-chroot /mnt pacman -Sy --noconfirm archlinux-keyring
+  arch-chroot /mnt pacman -Syu --noconfirm
+  arch-chroot /mnt pacman -S --noconfirm base-conf
+  arch-chroot /mnt pacman -Rsn --noconfirm sudo
   # Install boot loader for convenience (dual booting)
   # The kernel images are generated in /boot/ as a hook at the end of pacstrap
-  arch-chroot /mnt pacman -Syu --noconfirm systemd-boot-conf
+  arch-chroot /mnt pacman -S --noconfirm systemd-boot-conf
 
   # Install video drivers
-  arch-chroot /mnt pacman -Syu --noconfirm xf86-video-vesa
+  arch-chroot /mnt pacman -S --noconfirm xf86-video-vesa
 
   # Set root password
   printf "\n\nSet root password\n"
@@ -148,7 +163,10 @@ start=$(date +%s)
 arch_install 2>&1 | tee -a $log
 elapsed=$(($(date +%s)-$start))
 set +e
-mv $log /mnt/root/$log
+mv -v $log /mnt/root/$log
+install -vDm0600 id_ed25519 /mnt/home/carles/.ssh/id_ed25519
+install -vDm0644 id_ed25519.pub /mnt/home/carles/.ssh/id_ed25519.pub
+chmod 700 /mnt/home/carles/.ssh
 
 # umount -R /mnt
-# reboot
+# shutdown 0
