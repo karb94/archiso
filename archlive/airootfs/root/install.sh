@@ -17,6 +17,8 @@ USERNAME=carles
 
 # exit when any command fails
 set -e
+# If a command inside a pipeline fails, exit with the failed command exit code
+set -o pipefail
 
 if [[ $# -eq 0 ]]
 then
@@ -44,7 +46,6 @@ log="install.log"
 arch_install () {
 
   # exit when any command fails
-  set -e
 
   # update the system clock
   timedatectl set-ntp true
@@ -118,7 +119,7 @@ EOF
   arch-chroot /mnt pacman -Rsn --noconfirm sudo
   # Install boot loader for convenience (dual booting)
   # The kernel images are generated in /boot/ as a hook at the end of pacstrap
-  arch-chroot /mnt pacman -S --noconfirm systemd-boot-conf
+  # arch-chroot /mnt pacman -S --noconfirm systemd-boot-conf
 
   # Install video drivers
   arch-chroot /mnt pacman -S --noconfirm xf86-video-vesa
@@ -162,7 +163,6 @@ EOF
 start=$(date +%s)
 arch_install 2>&1 | tee -a $log
 elapsed=$(($(date +%s)-$start))
-set +e
 mv -v $log /mnt/root/$log
 install -vDm0600 id_ed25519 /mnt/home/carles/.ssh/id_ed25519
 install -vDm0644 id_ed25519.pub /mnt/home/carles/.ssh/id_ed25519.pub
