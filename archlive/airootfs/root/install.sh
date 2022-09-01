@@ -55,9 +55,9 @@ arch_install () {
   then
     sfdisk -W always /dev/${device} <<EOF
 label: gpt
+name=efi, size="$EFI_SIZE", type="$EFI_UUID"
 name=root, size="$ROOT_SIZE", type="$ROOT_UUID"
 name=swap, size="$SWAP_SIZE", type="$SWAP_UUID"
-name=efi, size="$EFI_SIZE", type="$EFI_UUID"
 name=home, type="$HOME_UUID"
 EOF
     EFI_DEVICE=$(blkid --list-one --output device --match-token PARTLABEL="efi")
@@ -98,9 +98,27 @@ EOF
     mkdir /mnt/boot && # make dir to mount efi on
     mount "$EFI_DEVICE" /mnt/boot # Mounting efi file system
 
-  # select only united kingdom mirrors
-  mirrors_url="https://archlinux.org/mirrorlist/?country=GB&protocol=https&use_mirror_status=on"
-  curl -s $mirrors_url | sed -e 's/^#Server/Server/' -e '/^#/d' > /etc/pacman.d/mirrorlist
+  # Generate fstab
+  mkdir -p /mnt/etc
+  genfstab -L /mnt >> /mnt/etc/fstab
+
+  # Select only united kingdom mirrors
+  reflector \
+    --country 'United Kingdom' \
+    --age 12 \
+    --protocol https \
+    --sort rate \
+    --save /etc/pacman.d/mirrorlist
+
+  # Reset all keys just in case
+  killall gpg-agent
+  rm -rf /etc/pacman.d/gnupg || true
+  pacman-key --init
+  pacman-key --populate archlinux
+  # Update keyring
+  pacman -Sy --noconfirm archlinux-keyring
+  # Update live iso
+  pacman -Syu --noconfirm
 
   # Create minimal system in /mnt by bootstrapping
   pacstrap /mnt base base-devel system_config-conf aur-conf
@@ -111,15 +129,16 @@ EOF
   # Copy local aur repo to the new system with access to any user in the wheel group
   install -vd -m0775 --group=wheel /mnt/var/cache/pacman/aur
   install -vm0664 --group=wheel /root/aur/* /mnt/var/cache/pacman/aur
+  ln -s /mnt/var/cache/pacman/aur/aur.db.tar.gz /mnt/var/cache/pacman/aur/aur.db
+  ln -s /mnt/var/cache/pacman/aur/aur.files.tar.gz /mnt/var/cache/pacman/aur/aur.files
 
   # Update system
-  arch-chroot /mnt pacman -Sy --noconfirm archlinux-keyring
-  arch-chroot /mnt pacman -Syu --noconfirm
   arch-chroot /mnt pacman -S --noconfirm base-conf
   arch-chroot /mnt pacman -Rsn --noconfirm sudo
   # Install boot loader for convenience (dual booting)
   # The kernel images are generated in /boot/ as a hook at the end of pacstrap
-  # arch-chroot /mnt pacman -S --noconfirm systemd-boot-conf
+  arch-chroot /mnt pacman -S --noconfirm systemd-boot-conf
+  arch-chroot /mnt bootctl install
 
   # Install video drivers
   arch-chroot /mnt pacman -S --noconfirm xf86-video-vesa
@@ -167,6 +186,18 @@ mv -v $log /mnt/root/$log
 install -vDm0600 id_ed25519 /mnt/home/carles/.ssh/id_ed25519
 install -vDm0644 id_ed25519.pub /mnt/home/carles/.ssh/id_ed25519.pub
 chmod 700 /mnt/home/carles/.ssh
+
+# ROOT_PARTUUID=$(blkid --list-one --output export --match-token PARTLABEL=root | grep PARTUUID)
+# EFI_PARTUUID=$(blkid --list-one --output export --match-token PARTLABEL=efi | grep PARTUUID)
+# EFI_DEVICE=$(blkid --list-one --output device --match-token PARTLABEL="efi")
+# efibootmgr \
+#   --disk ${EFI_DEVICE%?} \
+#   --part ${EFI_DEVICE: -1} \
+#   --create \
+#   --label "Arch Linux yaay" \
+#   --loader /vmlinuz-linux \
+#   --unicode "root=${ROOT_PARTUUID} rw initrd=\initramfs-linux.img" \
+#   --verbose
 
 # umount -R /mnt
 # shutdown 0
